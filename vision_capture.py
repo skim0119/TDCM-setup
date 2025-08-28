@@ -18,6 +18,8 @@ class Vision_System:
 		self.frame_timestamps = []
 		self.traj = None
 		self.speeds = None
+		self.color_mask_lower = None
+		self.color_mask_upper = None
 		
 	def capture_frame(self):
 		self.frame_timestamps.append(time.time()-self.start_time)
@@ -30,29 +32,36 @@ class Vision_System:
 		else: 
 			print("[Warning] Fail to capture frame")
 			
-	def optical_flow_track(self):
+	def optical_flow_track(self,lower,upper):
+		self.color_mask_lower = lower
+		self.color_mask_upper = upper
 		frames = self.load_jpg_frames()
+		#print(f"[Vision_capture]Number of Frames:{len()}")
 		self.traj, self.speeds = self.run_sparse_flow(frames)
 		
 		return self.traj, self.speeds
 	
 		
 		
-	def blue_mask_and_centroid(self,bgr_img):
+	def color_mask_and_centroid(self,bgr_img):
 		hsv = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2HSV)
 		
-		#HSV range for bule
+		#HSV range for color
+
 		
-		lower_blue = np.array([90,100,80],dtype = np.uint8)
-		upper_blue = np.array([130,255,255],dtype = np.uint8)
-		
-		mask = cv2.inRange(hsv, lower_blue, upper_blue)
+		mask = cv2.inRange(hsv, self.color_mask_lower, self.color_mask_upper)
 		
 		mask = cv2.medianBlur(mask,5)
+
 		kernel = np.ones((3,3),np.uint8)
 		mask = cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernel,iterations = 1)
 		msk = cv2.morphologyEx(mask,cv2.MORPH_CLOSE,kernel,iterations = 1)
 		
+	
+		cv2.imshow("imo",bgr_img)
+		cv2.imshow("image",msk)
+		cv2.waitKey(0)
+		cv2.destroyAllWindows()
 		# Calculate the Cetroid
 		M = cv2.moments(mask)
 		if M["m00"] > 0:
@@ -95,7 +104,7 @@ class Vision_System:
 		first = frames[keys[0]]["img"]
 		#print("The type is",type(first))
 		prev_gray = cv2.cvtColor(first, cv2.COLOR_BGR2GRAY)
-		_, c0 = self.blue_mask_and_centroid(first)
+		_, c0 = self.color_mask_and_centroid(first)
 		if c0 is None:
 			raise ValueError("Blue sticker not detected in first frame.")
 		p0 = np.array([[c0]], dtype=np.float32)  # shape (1,1,2)
@@ -129,7 +138,7 @@ class Vision_System:
 			else:
 				print("Lost")
 				# lost the point → re-detect by color (fallback)
-				_, c = self.blue_mask_and_centroid(img)
+				_, c = self.color_mask_and_centroid(img)
 				if c is not None:
 					p0 = np.array([[c]], dtype=np.float32)
 					prev_gray = gray
@@ -137,3 +146,4 @@ class Vision_System:
 				# (else: keep going; you can also mark NaN)
 
 		return traj, speeds  # lists
+		

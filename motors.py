@@ -14,7 +14,8 @@ class Motors:
         steps_per_rev: int = 400,
         max_rpm: float = 60.,
         pulse_width: float = 10e-6, 
-        debug: bool = False
+        debug: bool = False, 
+        speed: float = 1,
     ):
         """
         motor_orientation -- True means dir_motor_forward is clockwise when looking at the motor face
@@ -47,6 +48,8 @@ class Motors:
 
         self.motor_direction: list[bool] = [True] * len(pul_pins)        
         self.num_of_steps = [0] * len(pul_pins)
+        self.start_time = None
+        self.speed = speed
 
     def _get_pulse_low_time(self, scale: float):
         """Get delay corresponding to scale * max_rpm"""
@@ -117,7 +120,6 @@ class Motors:
         assert 0 <= index < len(self._PUL_devices), "Index out of range for given pins"
 
 
-
     def update(self, motor_index: typing.Union[int, list[int]]) -> int:
         """
         Check any running counters and give pulse if necessary. For use in main loop.
@@ -126,23 +128,34 @@ class Motors:
         def check_counter(device, index):
             if not self._motor_running[index] or self._motor_speeds[index] == 0:
                 return 0
-            
-            if time.perf_counter_ns() >= self._pulse_counter_targets[index]:
-                if self._pulse_in_high_phase:
-                    device.off()
-                    self._pulse_in_high_phase = False
-                    self._pulse_counter_targets[index] = time.perf_counter_ns() + \
-                        self._get_pulse_low_time(self._motor_speeds[index]) * 1e9
-                    return -1
-                else:
-                    device.on()
-                    if self.motor_direction[index] == True: self.num_of_steps[index] += 1
-                    else: self.num_of_steps[index] -= 1
         
-                    self._pulse_in_high_phase = True
-                    self._pulse_counter_targets[index] = time.perf_counter_ns() + \
-                        self.pulse_width * 1e9
-                    return 1
+        
+            if self._pulse_in_high_phase:
+                device.off()
+                start_time = self.start_time
+                self._pulse_in_high_phase = False
+                sleep_for = (self._get_pulse_low_time(self._motor_speeds[index])) - ((time.time()-start_time)%(self._get_pulse_low_time(self._motor_speeds[index])))
+                sleep_for = sleep_for * (0.5/self.speed)
+                #print("CCCCC", time.time()-start_time)
+                if sleep_for > 0:
+                    time.sleep(sleep_for)
+                    
+                return -1
+            else:
+                device.on()
+                start_time = self.start_time
+                if self.motor_direction[index] == True: self.num_of_steps[index] += 1
+                else: self.num_of_steps[index] -= 1
+    
+                self._pulse_in_high_phase = True
+                
+                sleep_for = (self._get_pulse_low_time(self._motor_speeds[index])) - ((time.time()-start_time)%(self._get_pulse_low_time(self._motor_speeds[index])))
+                sleep_for = sleep_for * (0.5/self.speed)
+               # print("sleep for", sleep_for)
+                if sleep_for > 0:
+                    time.sleep(sleep_for)
+                
+                return 1
             return 0
         return self._run(self._PUL_devices, motor_index, check_counter)
 

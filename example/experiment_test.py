@@ -17,11 +17,12 @@ motors = Spirob_Motors(
 	steps_per_rev=1600, 
 	max_rpm=30, 
 	pulse_width=10 * 1e-6,
-	debug=False)
+	debug=False, 
+	speed = 1)
 
 vision = Vision_System()
 
-system = Arm_System("Hysteresis_Experiment",motors,vision)
+system = Arm_System("Hysteresis_Experiment_test",motors,vision)
 
 # Define Experiment Specific Tasks 
 
@@ -37,12 +38,19 @@ if __name__ == "__main__":
 		system.start()
 		print("Experiment Starts")
 		
-		
-		lift_low(1,10000)
-		lift_low(1,10000)
-		lift_low(1,10000)
-
-		
+		motors.speed = 0.8
+		#time.sleep(5)
+		lift_low(1,4000)
+		lift_low(1,4000)
+		lift_low(1,4000)
+		#lift_low(1,6000)
+		#lift_low(1,6000)
+		#lift_low(1,6000)
+		#lift_low(1,6500)
+		#lift_low(1,7000)
+		#lift_low(1,7500)
+		##motors.speed = 0.25
+		#lift_low(1,8000)
 		experiment_data = system.callback() 
 	finally:
 		system.stop()

@@ -83,7 +83,7 @@ class Spirob_Motors(Motors):
 	
 	
 	def _get_motor_distance(self):
-		diameter = 0.015
+		diameter = 0.02
 		step_position = self.num_of_steps.copy()
 		step_distance = [(diameter/1600)*x for x in step_position] # Diameter of Threading dived by 1600 step/rev
 		return step_distance

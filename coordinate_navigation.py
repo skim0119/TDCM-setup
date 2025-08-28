@@ -82,6 +82,7 @@ def main_loop(motors,motor_index: int = 0, dir: int = 1, speed: float = 1):
 
     try:
         while Action:
+            motors.start_time = time.time()
             # if state["direction"] > 0:
             #     motors.dir_motor_forward()
             # else:
@@ -130,6 +131,7 @@ def move_to_steps(motors,x,y,z):
         
     try:
         while Action == True:
+            motors.start_time = time.time()
            
             current_step0 = motors.num_of_steps[0]
             current_step1 = motors.num_of_steps[1]
@@ -139,8 +141,8 @@ def move_to_steps(motors,x,y,z):
             gap_step0 = target[0] - current_step0
             gap_step1 = target[1] - current_step1
             gap_step2 = target[2] - current_step2
+            print("I actually run this line")
             
-        
             #print([current_step0, current_step1, current_step2],"|motor_running",motors._motor_running,"|motor_directions",motors.motor_direction,"|target_step",target)
             motors.update([0,1,2])
        
